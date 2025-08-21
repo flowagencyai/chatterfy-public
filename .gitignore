@@ -17,6 +17,8 @@ dist/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.production
+.env.staging
 
 # Database
 *.db
@@ -136,12 +138,51 @@ stripe-cli/
 *.key
 *.crt
 
-# Docker
-Dockerfile
-docker-compose*.yml
-.dockerignore
+# Test and debug files
+test-*.js
+test-*.png
+debug-*.js
+debug-*.png
 
-# Kubernetes
-k8s/
-*.yaml
-*.yml
+# Development artifacts
+MIGRATION-SUMMARY.md
+backup-*.db
+backup-*.json
+backup-*.sql
+*-backup.db
+import-from-sqlite.js
+rollback-to-sqlite.js
+complete-migration.js
+login-debug.png
+*-test.png
+free-plan-journey-test.png
+pricing-*.png
+modern-ux-test.png
+rollback-test-result.png
+*-debug.png
+*-test-final.png
+*-error.png
+
+# Documentation that shouldn't be public
+CHECKPOINT.md
+LOADING_FIXES_LOG.md
+PROBLEM-SOLVED-LOADING.md
+PRODUCTION_CHECKPOINT.md
+ROLLBACK_INSTRUCTIONS.md
+UX_IMPROVEMENTS_LOG.md
+PERSISTENCE_FIX_LOG.md
+STRIPE_MCP_SETUP.md
+
+# Checkpoints and backups directory
+backups/
+CHECKPOINT-*/
+
+# Production artifacts
+chatterfy-production.tar.gz
+*.tar.gz
+chatterfy-chunk-*
+chatterfy-deploy.tar.gz
+
+# Test files
+test-direct-html/
+test-results-*/

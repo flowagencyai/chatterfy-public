@@ -1,0 +1,83 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Generate Prisma Client
+      run: |
+        cd apps/api
+        npm run prisma:generate
+    
+    - name: Run linting
+      run: |
+        cd apps/api
+        npm run lint --if-present
+        cd ../web  
+        npm run lint --if-present
+    
+    - name: Run type checking
+      run: |
+        cd apps/api
+        npm run type-check --if-present
+        cd ../web
+        npm run type-check --if-present
+    
+    - name: Run tests
+      run: |
+        cd apps/api
+        npm test --if-present
+        cd ../web
+        npm test --if-present
+    
+    - name: Build projects
+      run: |
+        cd apps/api
+        npm run build --if-present
+        cd ../web
+        npm run build --if-present
+      env:
+        DATABASE_URL: file:./test.db
+        NEXTAUTH_SECRET: test-secret
+        NEXTAUTH_URL: http://localhost:3001
+
+  security:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run security audit
+      run: npm audit --audit-level moderate
+      continue-on-error: true
+    
+    - name: Check for secrets
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: main
+        head: HEAD
+        extra_args: --debug --only-verified

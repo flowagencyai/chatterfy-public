@@ -1,0 +1,81 @@
+version: '3.8'
+
+# Docker Compose para Desenvolvimento
+# Uso: docker-compose -f docker-compose.dev.yml up
+
+services:
+  # PostgreSQL para desenvolvimento
+  postgres-dev:
+    image: postgres:15-alpine
+    container_name: chatterfy-postgres-dev
+    environment:
+      POSTGRES_DB: chatterfy_dev
+      POSTGRES_USER: chatterfy
+      POSTGRES_PASSWORD: dev123
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # Porta diferente para não conflitar
+    networks:
+      - chatterfy-dev-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chatterfy -d chatterfy_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis para desenvolvimento
+  redis-dev:
+    image: redis:7-alpine
+    container_name: chatterfy-redis-dev
+    ports:
+      - "6380:6379"  # Porta diferente para não conflitar
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - chatterfy-dev-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MailHog para testes de email
+  mailhog:
+    image: mailhog/mailhog
+    container_name: chatterfy-mailhog
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - chatterfy-dev-network
+
+  # MinIO para simular AWS S3 localmente
+  minio:
+    image: minio/minio
+    container_name: chatterfy-minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"  # API
+      - "9001:9001"  # Console
+    networks:
+      - chatterfy-dev-network
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
+  minio_data:
+
+networks:
+  chatterfy-dev-network:
+    driver: bridge
