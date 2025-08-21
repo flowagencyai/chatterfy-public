@@ -255,7 +255,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
         // Count actual threads with messages (real conversations)
         const actualConversations = parsed.filter((t: Thread) => t.messages && t.messages.length > 0).length;
         console.log('🟢 [ChatContext] Conversações carregadas:', actualConversations);
-        console.log('🟢 [ChatContext] Threads encontradas:', parsed.map(t => `${t.id.substring(0,8)}...${t.title}`));
+        console.log('🟢 [ChatContext] Threads encontradas:', parsed.map((t: Thread) => `${t.id.substring(0,8)}...${t.title}`));
         setConversationCount(actualConversations);
         
         // BUGFIX: Debug pathname durante inicialização
@@ -415,7 +415,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
     const threadsToCheck = existingThreads || threads;
     
     // Se não foi fornecido um título, criar um numerado baseado nas threads existentes
-    let threadTitle = title;
+    let threadTitle = title || 'Nova conversa';
     if (!title) {
       // Coletar todos os números já usados em "Nova conversa X"
       const usedNumbers = new Set<number>();
@@ -576,7 +576,9 @@ export function ChatProvider({ children }: ChatProviderProps) {
       // Navigate to the new thread URL after a small delay to let API call complete
       console.log('🟡 [ChatContext] Agendando navegação para:', `/c/${workingThread.id}`);
       setTimeout(() => {
-        router.push(`/c/${workingThread.id}`);
+        if (workingThread) {
+          router.push(`/c/${workingThread.id}`);
+        }
       }, 100);
     }
     

@@ -9,7 +9,7 @@ const handler = NextAuth({
     EmailProvider({
       server: {
         host: process.env.EMAIL_SERVER_HOST,
-        port: process.env.EMAIL_SERVER_PORT,
+        port: Number(process.env.EMAIL_SERVER_PORT),
         auth: {
           user: process.env.EMAIL_SERVER_USER,
           pass: process.env.EMAIL_SERVER_PASSWORD,
@@ -23,11 +23,7 @@ const handler = NextAuth({
       }) {
         console.log('📧 [NextAuth] sendVerificationRequest chamado para:', email);
         console.log('🔗 [NextAuth] Magic link URL:', url);
-        console.log('⚙️ [NextAuth] Server config:', { 
-          host: server.host, 
-          port: server.port, 
-          user: server.auth?.user 
-        });
+        console.log('⚙️ [NextAuth] Server config available');
         
         return new Promise((resolve, reject) => {
           const { createTransport } = require('nodemailer');
@@ -107,14 +103,14 @@ Chatterfy - Sua IA pessoal para conversas inteligentes
             subject: "🚀 Complete seu cadastro no Chatterfy",
             text: emailText,
             html: emailHtml,
-          }).then((result) => {
+          }).then((result: any) => {
             console.log('✅ [NextAuth] Email enviado com sucesso!');
             console.log('📊 [NextAuth] Resultado do envio:', {
               messageId: result.messageId,
               response: result.response
             });
             resolve();
-          }).catch((error) => {
+          }).catch((error: any) => {
             console.error('❌ [NextAuth] ERRO ao enviar email:', error);
             console.error('🔍 [NextAuth] Detalhes do erro:', {
               message: error.message,
@@ -208,11 +204,11 @@ Chatterfy - Sua IA pessoal para conversas inteligentes
         
       } catch (error) {
         console.error('❌ [NextAuth] ERRO no signIn callback:', error);
-        console.error('🔍 [NextAuth] Stack trace:', error.stack);
+        console.error('🔍 [NextAuth] Stack trace:', (error as any).stack);
         console.error('🔍 [NextAuth] Erro detalhado:', {
-          message: error.message,
-          code: error.code,
-          meta: error.meta
+          message: (error as any).message,
+          code: (error as any).code,
+          meta: (error as any).meta
         });
         
         // Retorna true mesmo com erro para não bloquear o login

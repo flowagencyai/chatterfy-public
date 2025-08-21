@@ -11,7 +11,7 @@ const handler = NextAuth({
     EmailProvider({
       server: {
         host: process.env.EMAIL_SERVER_HOST,
-        port: process.env.EMAIL_SERVER_PORT,
+        port: Number(process.env.EMAIL_SERVER_PORT),
         auth: {
           user: process.env.EMAIL_SERVER_USER,
           pass: process.env.EMAIL_SERVER_PASSWORD,
@@ -25,7 +25,7 @@ const handler = NextAuth({
         const { createTransport } = require('nodemailer');
         const transport = createTransport({
           host: process.env.EMAIL_SERVER_HOST,
-          port: process.env.EMAIL_SERVER_PORT,
+          port: Number(process.env.EMAIL_SERVER_PORT),
           auth: {
             user: process.env.EMAIL_SERVER_USER,
             pass: process.env.EMAIL_SERVER_PASSWORD,
@@ -320,7 +320,7 @@ const handler = NextAuth({
           
           console.log('✅ [NextAuth] SIMPLIFICADO - Email enviado com sucesso!', result.messageId);
         } catch (error) {
-          console.error('❌ [NextAuth] SIMPLIFICADO - Erro ao enviar email:', error.message);
+          console.error('❌ [NextAuth] SIMPLIFICADO - Erro ao enviar email:', (error as any).message);
           throw error;
         }
       }
@@ -352,7 +352,7 @@ const handler = NextAuth({
         return true;
         
       } catch (error) {
-        console.error('❌ [NextAuth] Erro no signIn callback:', error.message);
+        console.error('❌ [NextAuth] Erro no signIn callback:', (error as any).message);
         // Autorizar mesmo com erro para não bloquear login
         return true;
       }

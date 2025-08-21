@@ -17,7 +17,6 @@ export default function ChatArea() {
     currentThread,
     addMessage,
     clearThread,
-    updateThread,
     isAnonymous,
     conversationCount,
     anonymousConversationLimit,

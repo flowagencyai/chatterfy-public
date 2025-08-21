@@ -31,7 +31,7 @@ export default function MessageRenderer({ content, className = '' }: MessageRend
         remarkPlugins={[remarkGfm]}
         components={{
           // Código inline
-          code({ node, inline, className, children, ...props }) {
+          code({ node, inline, className, children, ...props }: any) {
             const match = /language-(\w+)/.exec(className || '');
             const language = match ? match[1] : '';
 

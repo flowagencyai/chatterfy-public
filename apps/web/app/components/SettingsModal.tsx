@@ -531,7 +531,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     <div>
                       <h4 className={styles.billingTitle}>Assinatura Ativa</h4>
                       <p className={styles.billingDescription}>
-                        Sua assinatura {profile?.subscription?.plan?.name || profile?.subscription?.plan?.code?.toUpperCase() || 'ATUAL'} está ativa e funcionando
+                        Sua assinatura está ativa e funcionando
                       </p>
                     </div>
                   </div>
@@ -648,20 +648,20 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   Use sua chave de API para integrar com aplicações externas
                 </div>
                 <div className={styles.settingValue} style={{ fontFamily: 'monospace', fontSize: '13px' }}>
-                  {profile?.organization?.apiKey ? 
-                    `cha_${profile.organization.apiKey.substring(0, 8)}...${profile.organization.apiKey.slice(-4)}` : 
+                  {(profile?.organization as any)?.apiKey ? 
+                    `cha_${(profile?.organization as any).apiKey.substring(0, 8)}...${(profile?.organization as any).apiKey.slice(-4)}` : 
                     'Nenhuma chave gerada'
                   }
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
-                {profile?.organization?.apiKey ? (
+                {(profile?.organization as any)?.apiKey ? (
                   // Se existe chave, mostrar botões Copiar e Regenerar
                   <>
                     <button 
                       className={styles.apiButton}
                       onClick={() => {
-                        navigator.clipboard.writeText(`cha_${profile.organization.apiKey}`);
+                        navigator.clipboard.writeText(`cha_${(profile?.organization as any).apiKey}`);
                         success('Chave copiada para a área de transferência!', 3000);
                       }}
                       disabled={isProcessing}
@@ -709,13 +709,13 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 <div className={styles.usageStats}>
                   <div className={styles.usageStat}>
                     <span className={styles.usageNumber}>
-                      {profile?.usage.currentPeriod.apiRequests || 0}
+                      {(profile?.usage.currentPeriod as any)?.apiRequests || profile?.usage.currentPeriod.totalRequests || 0}
                     </span>
                     <span className={styles.usageLabel}>Requisições API</span>
                   </div>
                   <div className={styles.usageStat}>
                     <span className={styles.usageNumber}>
-                      {formatTokens(profile?.usage.currentPeriod.apiTokens || 0)}
+                      {formatTokens((profile?.usage.currentPeriod as any)?.apiTokens || profile?.usage.currentPeriod.totalTokens || 0)}
                     </span>
                     <span className={styles.usageLabel}>Tokens via API</span>
                   </div>

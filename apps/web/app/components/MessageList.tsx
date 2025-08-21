@@ -264,7 +264,7 @@ export default function MessageList({ messages, isLoading, onRegenerateResponse,
                   currentModel?.model?.toLowerCase().includes('reason') ||
                   currentModel?.model?.toLowerCase().includes('o1')) && (
                   <div className={styles.reasoningSection}>
-                    <div className={styles.reasoningDetails} open>
+                    <details className={styles.reasoningDetails} open>
                       <div className={styles.reasoningSummary}>
                         <span>🧠 Raciocinando...</span>
                       </div>
@@ -273,7 +273,7 @@ export default function MessageList({ messages, isLoading, onRegenerateResponse,
                           <ReasoningProgress />
                         </div>
                       </div>
-                    </div>
+                    </details>
                   </div>
                 )}
                 

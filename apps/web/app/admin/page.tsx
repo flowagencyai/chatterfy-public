@@ -1584,12 +1584,12 @@ export default function UnifiedAdminDashboard() {
                       gap: '8px'
                     }}
                     onMouseOver={(e) => {
-                      e.target.style.backgroundColor = '#0056b3';
-                      e.target.style.transform = 'translateY(-2px)';
+                      (e.target as HTMLElement).style.backgroundColor = '#0056b3';
+                      (e.target as HTMLElement).style.transform = 'translateY(-2px)';
                     }}
                     onMouseOut={(e) => {
-                      e.target.style.backgroundColor = '#007bff';
-                      e.target.style.transform = 'translateY(0)';
+                      (e.target as HTMLElement).style.backgroundColor = '#007bff';
+                      (e.target as HTMLElement).style.transform = 'translateY(0)';
                     }}
                   >
                     ➕ Nova Regra de Alerta
@@ -1835,8 +1835,8 @@ export default function UnifiedAdminDashboard() {
                                     transition: 'all 0.2s',
                                     boxShadow: '0 2px 4px rgba(23,162,184,0.2)'
                                   }}
-                                  onMouseOver={(e) => e.target.style.backgroundColor = '#138496'}
-                                  onMouseOut={(e) => e.target.style.backgroundColor = '#17a2b8'}
+                                  onMouseOver={(e) => (e.target as HTMLElement).style.backgroundColor = '#138496'}
+                                  onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = '#17a2b8'}
                                 >
                                   🧪
                                 </button>
@@ -1874,8 +1874,8 @@ export default function UnifiedAdminDashboard() {
                                     transition: 'all 0.2s',
                                     boxShadow: '0 2px 4px rgba(40,167,69,0.2)'
                                   }}
-                                  onMouseOver={(e) => e.target.style.backgroundColor = '#218838'}
-                                  onMouseOut={(e) => e.target.style.backgroundColor = '#28a745'}
+                                  onMouseOver={(e) => (e.target as HTMLElement).style.backgroundColor = '#218838'}
+                                  onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = '#28a745'}
                                 >
                                   ✏️
                                 </button>
@@ -1895,8 +1895,8 @@ export default function UnifiedAdminDashboard() {
                                     transition: 'all 0.2s',
                                     boxShadow: '0 2px 4px rgba(220,53,69,0.2)'
                                   }}
-                                  onMouseOver={(e) => e.target.style.backgroundColor = '#c82333'}
-                                  onMouseOut={(e) => e.target.style.backgroundColor = '#dc3545'}
+                                  onMouseOver={(e) => (e.target as HTMLElement).style.backgroundColor = '#c82333'}
+                                  onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = '#dc3545'}
                                 >
                                   🗑️
                                 </button>
@@ -2548,12 +2548,12 @@ export default function UnifiedAdminDashboard() {
                         transition: 'all 0.2s'
                       }}
                       onMouseOver={(e) => {
-                        e.target.style.backgroundColor = '#dc3545';
-                        e.target.style.color = '#fff';
+                        (e.target as HTMLElement).style.backgroundColor = '#dc3545';
+                        (e.target as HTMLElement).style.color = '#fff';
                       }}
                       onMouseOut={(e) => {
-                        e.target.style.backgroundColor = 'transparent';
-                        e.target.style.color = '#dc3545';
+                        (e.target as HTMLElement).style.backgroundColor = 'transparent';
+                        (e.target as HTMLElement).style.color = '#dc3545';
                       }}
                     >
                       ❌ Cancelar
@@ -2573,8 +2573,8 @@ export default function UnifiedAdminDashboard() {
                         transition: 'all 0.2s',
                         boxShadow: '0 2px 4px rgba(40,167,69,0.2)'
                       }}
-                      onMouseOver={(e) => e.target.style.backgroundColor = '#218838'}
-                      onMouseOut={(e) => e.target.style.backgroundColor = '#28a745'}
+                      onMouseOver={(e) => (e.target as HTMLElement).style.backgroundColor = '#218838'}
+                      onMouseOut={(e) => (e.target as HTMLElement).style.backgroundColor = '#28a745'}
                     >
                       🚨 Criar Regra de Alerta
                     </button>
