@@ -1,10 +1,10 @@
 import NextAuth from "next-auth";
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
+import { CustomPrismaAdapter } from "./custom-adapter";
 import EmailProvider from "next-auth/providers/email";
 import prisma from "../../../server/prisma";
 
 export const authConfig = {
-  adapter: PrismaAdapter(prisma),
+  adapter: CustomPrismaAdapter(prisma),
   providers: [
     EmailProvider({
       server: process.env.EMAIL_SERVER,
@@ -14,18 +14,22 @@ export const authConfig = {
   session: { strategy: "database" as const },
   callbacks: {
     async signIn({ user }: any) {
-      // Onboarding automático: criar org para novos usuários
+      // O CustomPrismaAdapter já cuida da criação da org
+      // Aqui só precisamos verificar/criar o plano FREE e subscription
       if (user.email) {
-        const existingUser = await prisma.user.findUnique({
+        const dbUser = await prisma.user.findUnique({
           where: { email: user.email },
-          include: { org: true }
+          include: { 
+            org: {
+              include: {
+                subscriptions: true
+              }
+            }
+          }
         });
 
-        if (!existingUser) {
-          // Novo usuário - criar org pessoal
-          const orgName = user.name || user.email.split('@')[0];
-          
-          // Buscar plano padrão
+        if (dbUser && !dbUser.org.subscriptions.length) {
+          // Usuário existe mas não tem subscription - criar
           let freePlan = await prisma.plan.findUnique({
             where: { code: "FREE" }
           });
@@ -45,23 +49,13 @@ export const authConfig = {
             });
           }
 
-          const newOrg = await prisma.organization.create({
+          await prisma.subscription.create({
             data: {
-              name: `${orgName}'s Organization`,
-              users: {
-                create: {
-                  email: user.email,
-                  name: user.name || orgName
-                }
-              },
-              subscriptions: {
-                create: {
-                  planId: freePlan.id,
-                  active: true,
-                  periodStart: new Date(),
-                  periodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 dias
-                }
-              }
+              orgId: dbUser.orgId,
+              planId: freePlan.id,
+              active: true,
+              periodStart: new Date(),
+              periodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 dias
             }
           });
         }
