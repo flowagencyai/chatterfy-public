@@ -1,0 +1,154 @@
+version: '3.8'
+
+services:
+  # Base de dados PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: chatterfy
+      POSTGRES_USER: chatterfy
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-chatterfy123}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - traefik_public
+      - chatterfy-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chatterfy -d chatterfy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  # Redis para cache e sessões
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    networks:
+      - traefik_public
+      - chatterfy-internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  # API Backend
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://chatterfy:${POSTGRES_PASSWORD:-chatterfy123}@postgres:5432/chatterfy
+      REDIS_URL: redis://redis:6379
+      API_PORT: 8787
+      # Provider API Keys
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      # AWS S3
+      USE_S3: ${USE_S3:-false}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+      AWS_S3_REGION: ${AWS_S3_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      # Stripe
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      # Rate Limiting
+      RATE_LIMIT_RPM: ${RATE_LIMIT_RPM:-120}
+      ORG_RATE_LIMIT_RPM: ${ORG_RATE_LIMIT_RPM:-600}
+      USER_RATE_LIMIT_RPM: ${USER_RATE_LIMIT_RPM:-240}
+      # CORS
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://chatterfy.net,https://www.chatterfy.net}
+    volumes:
+      - uploads_data:/app/uploads
+      - logs_data:/app/logs
+    networks:
+      - traefik_public
+      - chatterfy-internal
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8787/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.chatterfy-api.rule=Host(`api.chatterfy.net`)"
+        - "traefik.http.routers.chatterfy-api.entrypoints=websecure"
+        - "traefik.http.routers.chatterfy-api.tls.certresolver=le"
+        - "traefik.http.services.chatterfy-api.loadbalancer.server.port=8787"
+        - "traefik.docker.network=traefik_public"
+
+  # Frontend Web
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_BASE: https://api.chatterfy.net
+      NEXTAUTH_URL: https://chatterfy.net
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      # Email SMTP
+      EMAIL_SERVER: ${EMAIL_SERVER}
+      EMAIL_FROM: ${EMAIL_FROM}
+    networks:
+      - traefik_public
+      - chatterfy-internal
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.chatterfy-web.rule=Host(`chatterfy.net`) || Host(`www.chatterfy.net`)"
+        - "traefik.http.routers.chatterfy-web.entrypoints=websecure"
+        - "traefik.http.routers.chatterfy-web.tls.certresolver=le"
+        - "traefik.http.services.chatterfy-web.loadbalancer.server.port=3000"
+        - "traefik.docker.network=traefik_public"
+        # Redirect www to non-www
+        - "traefik.http.routers.chatterfy-web-redirect.rule=Host(`www.chatterfy.net`)"
+        - "traefik.http.routers.chatterfy-web-redirect.entrypoints=websecure"
+        - "traefik.http.routers.chatterfy-web-redirect.tls.certresolver=le"
+        - "traefik.http.routers.chatterfy-web-redirect.middlewares=redirect-www-to-non-www"
+        - "traefik.http.middlewares.redirect-www-to-non-www.redirectregex.regex=^https://www\\.(.+)"
+        - "traefik.http.middlewares.redirect-www-to-non-www.redirectregex.replacement=https://$${1}"
+        - "traefik.http.middlewares.redirect-www-to-non-www.redirectregex.permanent=true"
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads_data:
+  logs_data:
+
+networks:
+  traefik_public:
+    external: true
+  chatterfy-internal:
+    driver: overlay
