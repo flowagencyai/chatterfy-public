@@ -1,12 +1,12 @@
 import NextAuth from "next-auth";
 import EmailProvider from "next-auth/providers/email";
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
+import { CustomPrismaAdapter } from "../custom-adapter";
 import prisma from "../../../../server/prisma";
 
-console.log('🔧 [NextAuth] Inicializando configuração SIMPLIFICADA com PrismaAdapter...');
+console.log('🔧 [NextAuth] Inicializando com CustomPrismaAdapter...');
 
 const handler = NextAuth({
-  adapter: PrismaAdapter(prisma),
+  adapter: CustomPrismaAdapter(prisma),
   providers: [
     EmailProvider({
       server: {
@@ -19,8 +19,8 @@ const handler = NextAuth({
       },
       from: process.env.EMAIL_FROM,
       sendVerificationRequest: async ({ identifier: email, url }) => {
-        console.log('📧 [NextAuth] SIMPLIFICADO - Enviando email para:', email);
-        console.log('🔗 [NextAuth] SIMPLIFICADO - URL:', url);
+        console.log('📧 [NextAuth] Enviando email para:', email);
+        console.log('🔗 [NextAuth] URL:', url);
         
         const { createTransport } = require('nodemailer');
         const transport = createTransport({
@@ -45,35 +45,7 @@ const handler = NextAuth({
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bem-vindo ao Chatterfy</title>
-  <!--[if mso]>
-  <noscript>
-    <xml>
-      <o:OfficeDocumentSettings>
-        <o:PixelsPerInch>96</o:PixelsPerInch>
-      </o:OfficeDocumentSettings>
-    </xml>
-  </noscript>
-  <![endif]-->
   <style>
-    /* Reset styles */
-    body, table, td, p, a, li, blockquote {
-      -webkit-text-size-adjust: 100%;
-      -ms-text-size-adjust: 100%;
-    }
-    table, td {
-      mso-table-lspace: 0pt;
-      mso-table-rspace: 0pt;
-    }
-    img {
-      -ms-interpolation-mode: bicubic;
-      border: 0;
-      height: auto;
-      line-height: 100%;
-      outline: none;
-      text-decoration: none;
-    }
-    
-    /* Main styles */
     body {
       margin: 0 !important;
       padding: 0 !important;
@@ -227,7 +199,6 @@ const handler = NextAuth({
       text-decoration: underline;
     }
     
-    /* Mobile responsiveness */
     @media only screen and (max-width: 600px) {
       .email-container {
         width: 100% !important;
@@ -318,9 +289,9 @@ const handler = NextAuth({
             `,
           });
           
-          console.log('✅ [NextAuth] SIMPLIFICADO - Email enviado com sucesso!', result.messageId);
+          console.log('✅ [NextAuth] Email enviado com sucesso!', result.messageId);
         } catch (error) {
-          console.error('❌ [NextAuth] SIMPLIFICADO - Erro ao enviar email:', (error as any).message);
+          console.error('❌ [NextAuth] Erro ao enviar email:', (error as any).message);
           throw error;
         }
       }
@@ -336,38 +307,80 @@ const handler = NextAuth({
       console.log('🔐 [NextAuth] signIn callback para:', user.email);
       
       try {
-        // Verificar se usuário já existe
-        const existingUser = await prisma.user.findUnique({
+        // O CustomPrismaAdapter já cria o usuário + organização
+        // Aqui só precisamos criar subscription se não existir
+        const dbUser = await prisma.user.findUnique({
           where: { email: user.email },
+          include: { 
+            org: {
+              include: {
+                subscriptions: true
+              }
+            }
+          }
         });
 
-        if (!existingUser) {
-          console.log('🆕 [NextAuth] Novo usuário - criação será feita pelo PrismaAdapter');
-          // PrismaAdapter criará o usuário automaticamente
-          // Não criamos organização aqui para evitar conflitos
-        } else {
-          console.log('👤 [NextAuth] Usuário existente encontrado');
+        if (dbUser && !dbUser.org.subscriptions.length) {
+          console.log('🆕 [NextAuth] Criando subscription FREE para novo usuário');
+          
+          // Buscar ou criar plano FREE
+          let freePlan = await prisma.plan.findUnique({
+            where: { code: "FREE" }
+          });
+          
+          if (!freePlan) {
+            freePlan = await prisma.plan.create({
+              data: {
+                code: "FREE",
+                name: "Free Plan",
+                monthlyCreditsTokens: 10000,
+                dailyTokenLimit: 10000,
+                storageLimitMB: 10,
+                maxFileSizeMB: 5,
+                features: JSON.stringify({})
+              }
+            });
+          }
+
+          await prisma.subscription.create({
+            data: {
+              orgId: dbUser.orgId,
+              planId: freePlan.id,
+              active: true,
+              periodStart: new Date(),
+              periodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 dias
+            }
+          });
+          
+          console.log('✅ [NextAuth] Subscription FREE criada');
         }
         
         return true;
         
       } catch (error) {
         console.error('❌ [NextAuth] Erro no signIn callback:', (error as any).message);
-        // Autorizar mesmo com erro para não bloquear login
-        return true;
+        return true; // Não bloquear login por erro de subscription
       }
     },
     async session({ session, user }: any) {
-      console.log('👤 [NextAuth] SIMPLIFICADO - session callback');
-      // Adicionar user ID básico
+      console.log('👤 [NextAuth] session callback');
       if (session.user) {
-        session.user.id = user.id;
+        const dbUser = await prisma.user.findUnique({
+          where: { email: session.user.email },
+          include: { org: true }
+        });
+        
+        if (dbUser) {
+          session.user.id = dbUser.id;
+          session.user.orgId = dbUser.orgId;
+          session.user.orgName = dbUser.org.name;
+        }
       }
       return session;
     },
   },
 });
 
-console.log('✅ [NextAuth] Configuração SIMPLIFICADA criada');
+console.log('✅ [NextAuth] Configuração com CustomPrismaAdapter criada');
 
 export { handler as GET, handler as POST };
